@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Test Firebase</h1>
+<p id="result">Attendo...</p>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "INCOLLA_QUI_LA_TUA_API_KEY",
+    authDomain: "INCOLLA_QUI",
+    projectId: "INCOLLA_QUI",
+    storageBucket: "INCOLLA_QUI",
+    messagingSenderId: "INCOLLA_QUI",
+    appId: "INCOLLA_QUI"
+  });
+
+  const db = getFirestore(app);
+  const el = document.getElementById("result");
+
+  try {
+    el.textContent = "Scrivo su Firestore...";
+    await addDoc(collection(db, "test"), { nome: "Test", data: new Date().toISOString() });
+    el.textContent = "Scritto! Ora leggo...";
+    const snap = await getDocs(collection(db, "test"));
+    el.textContent = "Funziona! Documenti trovati: " + snap.size;
+    el.style.color = "green";
+  } catch (err) {
+    el.textContent = "ERRORE: " + err.message;
+    el.style.color = "red";
+  }
+</script>
+</body>
+</html>
