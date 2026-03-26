@@ -309,8 +309,9 @@ const [collapsedParticipants, setCollapsedParticipants] = useState([]);
   };
 
   const deleteClient = async (id) => {
+    const client = clients.find((c) => c.id === id);
+    if (!confirm(`Eliminare ${client?.name || "questo cliente"}? Tutti i suoi dati verranno cancellati.`)) return;
     await clientsStore.remove(id);
-    // Remove related achievements
     const related = achievements.filter((a) => a.clientId === id);
     for (const a of related) {
       await achievementsStore.remove(a.id);
@@ -516,20 +517,14 @@ const [collapsedParticipants, setCollapsedParticipants] = useState([]);
                     style={styles.clientCard}
                     onClick={() => setSelectedClient(c.id)}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={styles.clientName}>{c.name}</div>
-                        <div style={styles.clientMeta}>
-                          {totalSkills} / {ALL_SKILLS.length} abilità
-                        </div>
+                        <LevelBadge level={lvl} size="sm" />
                       </div>
-                      <LevelBadge level={lvl} size="sm" />
+                      <div style={styles.clientMeta}>
+                        {totalSkills} / {ALL_SKILLS.length} abilità
+                      </div>
                     </div>
                     <div style={styles.progressBarTrack}>
                       <div
@@ -1510,17 +1505,17 @@ const styles = {
     borderRadius: 2,
     transition: "width 0.4s ease",
   },
-  deleteBtn: {
+ deleteBtn: {
     position: "absolute",
     top: 8,
     right: 8,
-    background: "transparent",
-    border: "none",
-    color: "var(--text-muted)",
+    background: "#c5303015",
+    border: "1px solid #c5303030",
+    color: "#c53030",
     cursor: "pointer",
-    padding: 4,
-    borderRadius: 4,
-    opacity: 0.4,
+    padding: 6,
+    borderRadius: 6,
+    opacity: 0.8,
     transition: "opacity 0.15s",
   },
   badge: {
