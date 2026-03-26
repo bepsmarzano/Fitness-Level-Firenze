@@ -27,7 +27,7 @@ const LEVELS = [
     skills: [
       { id: "3A", name: "1 Pull Up" },
       { id: "3B", name: "1 Short Rope Climb" },
-      { id: "3C", name: "10 American Swing UB" },
+      { id: "3C", name: "10 American Swing UB 24/16" },
     ],
   },
   {
@@ -36,7 +36,7 @@ const LEVELS = [
     skills: [
       { id: "4A", name: "5 Toes to Bar Unbroken" },
       { id: "4B", name: "1 Wall Walk" },
-      { id: "4C", name: "5 Power Clean TnG ½ BW" },
+      { id: "4C", name: "5 Power Clean TnG 50/35" },
     ],
   },
   {
@@ -54,7 +54,16 @@ const LEVELS = [
     skills: [
       { id: "6A", name: "1 Strict Ring MU" },
       { id: "6B", name: "3 Bar MU" },
-      { id: "6C", name: "Miglio < 8:00" },
+      { id: "6C", name: "Miglio < 7:30" },
+    ],
+  },
+{
+    level: 7,
+    color: "#1A1A6B",
+    skills: [
+      { id: "7A", name: "5 Strict HSPU" },
+      { id: "7B", name: "6 m HS Walk UB" },
+      { id: "7C", name: "Snatch Complex @80/55 (1 PS + 1 Hang SqSn + 1 OHS)" },
     ],
   },
 ];
@@ -250,6 +259,7 @@ export default function App() {
   const [classSearch, setClassSearch] = useState("");
   const [classParticipants, setClassParticipants] = useState([]);
   const [className, setClassName] = useState("");
+const [collapsedParticipants, setCollapsedParticipants] = useState([]);
 
   useEffect(() => {
     if (loaded && trainers.length > 0 && !currentTrainer) setCurrentTrainer(trainers[0]);
@@ -644,19 +654,31 @@ export default function App() {
             );
           })()}
 
-        {/* ═══════ CLASS VIEW ═══════ */}
+       {/* ═══════ CLASS VIEW ═══════ */}
         {view === "class" && (
           <div style={styles.fadeIn}>
             {!activeClass ? (
               <>
                 <div style={styles.topBar}>
                   <h2 style={styles.sectionTitle}>Classi</h2>
-                  <button
-                    onClick={() => setModal("createClass")}
-                    style={styles.btnPrimary}
-                  >
-                    <Icons.Plus /> Nuova Classe
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={async () => {
+                        if (confirm("Svuotare tutte le classi?")) {
+                          for (const cl of classes) await classesStore.remove(cl.id || cl._docId);
+                        }
+                      }}
+                      style={{ ...styles.btnSecondary, color: "#c53030", borderColor: "#c5303044" }}
+                    >
+                      <Icons.Trash /> Svuota tutte
+                    </button>
+                    <button
+                      onClick={() => setModal("createClass")}
+                      style={styles.btnPrimary}
+                    >
+                      <Icons.Plus /> Nuova Classe
+                    </button>
+                  </div>
                 </div>
                 <div style={styles.classHistory}>
                   {[...classes]
@@ -665,31 +687,13 @@ export default function App() {
                       <div
                         key={cl.id}
                         style={styles.classCard}
-                        onClick={() => setActiveClass(cl)}
+                        onClick={() => { setActiveClass(cl); setExpandedParticipant(null); }}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                          }}
-                        >
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
                           <div style={{ fontWeight: 700, fontSize: 15 }}>{cl.name}</div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "var(--text-muted)",
-                            }}
-                          >
-                            {formatDate(cl.date)}
-                          </div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{formatDate(cl.date)}</div>
                         </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: "var(--text-secondary)",
-                            marginTop: 4,
-                          }}
-                        >
+                        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
                           {cl.trainer} · {cl.participants.length} partecipanti
                         </div>
                       </div>
@@ -698,10 +702,7 @@ export default function App() {
                     <div style={styles.emptyState}>
                       <Icons.Class />
                       <p>Nessuna classe creata</p>
-                      <button
-                        onClick={() => setModal("createClass")}
-                        style={styles.btnPrimary}
-                      >
+                      <button onClick={() => setModal("createClass")} style={styles.btnPrimary}>
                         <Icons.Plus /> Crea classe
                       </button>
                     </div>
@@ -717,9 +718,24 @@ export default function App() {
                   <div>
                     <h2 style={styles.detailName}>{activeClass.name}</h2>
                     <p style={styles.detailSub}>
-                      {activeClass.trainer} · {formatDate(activeClass.date)} ·{" "}
-                      {activeClass.participants.length} partecipanti
+                      {activeClass.trainer} · {formatDate(activeClass.date)} · {activeClass.participants.length} partecipanti
                     </p>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setModal("editClassParticipants")} style={styles.btnSecondary}>
+                      <Icons.Users /> Modifica
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm("Svuotare questa classe?")) {
+                          await classesStore.remove(activeClass.id);
+                          setActiveClass(null);
+                        }
+                      }}
+                      style={{ ...styles.btnSecondary, color: "#c53030", borderColor: "#c5303044" }}
+                    >
+                      <Icons.Trash /> Svuota
+                    </button>
                   </div>
                 </div>
                 <div style={styles.classParticipantGrid}>
@@ -727,69 +743,47 @@ export default function App() {
                     const client = clients.find((c) => c.id === pid);
                     if (!client) return null;
                     const lvl = getClientLevel(client.id);
+                    const nextLevel = LEVELS.find((l) => l.level === lvl + 1);
+                    const isCollapsed = collapsedParticipants.includes(pid);
                     return (
-                      <div
-                        key={pid}
-                        style={styles.classParticipantCard}
-                        onClick={() => {
-                          setSelectedClient(pid);
-                          setView("clients");
-                        }}
-                      >
+                      <div key={pid} style={styles.classParticipantCard}>
                         <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: 8,
-                          }}
+                          onClick={() => setCollapsedParticipants(prev => isCollapsed ? prev.filter(p => p !== pid) : [...prev, pid])}
+                          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
                         >
-                          <span style={{ fontWeight: 700, fontSize: 14 }}>
-                            {client.name}
-                          </span>
-                          <LevelBadge level={lvl} size="sm" />
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{client.name}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <LevelBadge level={lvl} size="sm" />
+                            <span style={{ color: "var(--text-muted)", fontSize: 12, transform: isCollapsed ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }}>▼</span>
+                          </div>
                         </div>
-                        {LEVELS.map((l) => {
-                          if (l.level > lvl + 1) return null;
-                          if (l.level <= lvl) return null;
-                          return (
-                            <div key={l.level} style={{ marginTop: 4 }}>
-                              <div
-                                style={{
-                                  fontSize: 11,
-                                  color: "var(--text-muted)",
-                                  marginBottom: 2,
-                                }}
-                              >
-                                Prossimo: Lv{l.level}
-                              </div>
-                              <div style={{ display: "flex", gap: 4 }}>
-                                {l.skills.map((s) => {
-                                  const ach = getSkillAchievement(client.id, s.id);
-                                  return (
-                                    <div
-                                      key={s.id}
-                                      title={s.name}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleSkill(client.id, s.id);
-                                      }}
-                                      style={{
-                                        flex: 1,
-                                        height: 6,
-                                        borderRadius: 3,
-                                        background: ach
-                                          ? l.color
-                                          : "var(--bg-tertiary)",
-                                        cursor: "pointer",
-                                      }}
-                                    />
-                                  );
-                                })}
-                              </div>
+                        {!isCollapsed && nextLevel && (
+                          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+                              Prossimo: Lv {nextLevel.level}
                             </div>
-                          );
-                        })}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              {nextLevel.skills.map((s) => {
+                                const ach = getSkillAchievement(client.id, s.id);
+                                return (
+                                  <SkillChip
+                                    key={s.id}
+                                    skill={s}
+                                    achieved={!!ach}
+                                    onClick={() => toggleSkill(client.id, s.id)}
+                                    trainerName={ach?.trainer}
+                                    date={ach?.date}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {!isCollapsed && !nextLevel && (
+                          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border)", fontSize: 13, color: "var(--text-muted)" }}>
+                            Livello massimo raggiunto!
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -864,7 +858,7 @@ export default function App() {
             <div style={styles.reportSection}>
               <h3 style={styles.reportSubtitle}>Distribuzione Livelli</h3>
               <div style={styles.barChart}>
-                {[0, 1, 2, 3, 4, 5, 6].map((lvl) => {
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((lvl) => {
                   const count = reportData.levelDistribution[lvl] || 0;
                   const max = Math.max(
                     ...Object.values(reportData.levelDistribution),
@@ -1150,6 +1144,63 @@ export default function App() {
                   }}
                 >
                   Crea Classe ({classParticipants.length} partecipanti)
+                </button>
+              </>
+            )}
+            {modal === "editClassParticipants" && (
+              <>
+                <h3 style={styles.modalTitle}>Modifica Partecipanti</h3>
+                <div style={styles.searchBox}>
+                  <Icons.Search />
+                  <input
+                    placeholder="Cerca..."
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    style={styles.searchInput}
+                  />
+                </div>
+                <div style={styles.participantList}>
+                  {clients
+                    .filter((c) => c.name.toLowerCase().includes(classSearch.toLowerCase()))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((c) => {
+                      const selected = activeClass.participants.includes(c.id);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={async () => {
+                            const newParticipants = selected
+                              ? activeClass.participants.filter((p) => p !== c.id)
+                              : [...activeClass.participants, c.id];
+                            const updated = { ...activeClass, participants: newParticipants };
+                            await classesStore.upsert(activeClass.id, updated);
+                            setActiveClass(updated);
+                          }}
+                          style={{
+                            ...styles.participantItem,
+                            background: selected ? "var(--accent-bg)" : "transparent",
+                            borderColor: selected ? "var(--accent)" : "var(--border)",
+                          }}
+                        >
+                          <div style={{
+                            width: 20, height: 20, borderRadius: 4,
+                            border: `2px solid ${selected ? "var(--accent)" : "var(--border)"}`,
+                            background: selected ? "var(--accent)" : "transparent",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {selected && <span style={{ color: "#fff", fontSize: 10 }}><Icons.Check /></span>}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: selected ? 600 : 400 }}>{c.name}</span>
+                          <LevelBadge level={getClientLevel(c.id)} size="sm" />
+                        </div>
+                      );
+                    })}
+                </div>
+                <button
+                  onClick={() => { setModal(null); setClassSearch(""); }}
+                  style={{ ...styles.btnPrimary, width: "100%", marginTop: 12 }}
+                >
+                  Fatto ({activeClass.participants.length} partecipanti)
                 </button>
               </>
             )}
