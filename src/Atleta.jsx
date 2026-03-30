@@ -10,12 +10,12 @@ const LEVELS = [
   { level: 2, color: "#3D7EAA", skills: [
     { id: "2A", name: "8 Toes to Ring Unbroken" },
     { id: "2B", name: "1 Box Jump" },
-    { id: "2C", name: "3 Double Under Unbroken" },
+    { id: "2C", name: "10 American Swing UB 24/16" },
   ]},
   { level: 3, color: "#D4A03C", skills: [
     { id: "3A", name: "1 Pull Up" },
     { id: "3B", name: "1 Short Rope Climb" },
-    { id: "3C", name: "10 American Swing UB 24/16" },
+    { id: "3C", name: "3 Double Under Unbroken" },
   ]},
   { level: 4, color: "#C75B39", skills: [
     { id: "4A", name: "5 Toes to Bar Unbroken" },
