@@ -8,7 +8,7 @@ export function useFirestoreCollection(tableName) {
 
   const fetchData = useCallback(async () => {
     if (Date.now() - lastLocalUpdate.current < 2000) return;
-    const { data: rows, error } = await supabase.from(tableName).select("*");
+    const { data: rows, error } = await supabase.from(tableName).select("*").limit(10000).range(0, 9999);
     if (error) console.error("Fetch error:", tableName, error.message);
     if (!error && rows) setData(rows);
     setLoaded(true);
@@ -16,7 +16,7 @@ export function useFirestoreCollection(tableName) {
 
   useEffect(() => {
     (async () => {
-      const { data: rows, error } = await supabase.from(tableName).select("*");
+      const { data: rows, error } = await supabase.from(tableName).select("*").limit(10000).range(0, 9999);
       if (!error && rows) setData(rows);
       setLoaded(true);
     })();
