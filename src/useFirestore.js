@@ -1,6 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./firebase.js";
 
+async function fetchAll(tableName) {
+  let all = [];
+  let from = 0;
+  const step = 1000;
+  while (true) {
+    const { data, error } = await supabase.from(tableName).select("*").range(from, from + step - 1);
+    if (error) { console.error("Fetch error:", tableName, error.message); break; }
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < step) break;
+    from += step;
+  }
+  return all;
+}
+
 export function useFirestoreCollection(tableName) {
   const [data, setData] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -8,16 +23,15 @@ export function useFirestoreCollection(tableName) {
 
   const fetchData = useCallback(async () => {
     if (Date.now() - lastLocalUpdate.current < 2000) return;
-    const { data: rows, error } = await supabase.from(tableName).select("*").limit(10000).range(0, 9999);
-    if (error) console.error("Fetch error:", tableName, error.message);
-    if (!error && rows) setData(rows);
+    const rows = await fetchAll(tableName);
+    setData(rows);
     setLoaded(true);
   }, [tableName]);
 
   useEffect(() => {
     (async () => {
-      const { data: rows, error } = await supabase.from(tableName).select("*").limit(10000).range(0, 9999);
-      if (!error && rows) setData(rows);
+      const rows = await fetchAll(tableName);
+      setData(rows);
       setLoaded(true);
     })();
     const channel = supabase
